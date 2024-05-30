@@ -1,62 +1,15 @@
+mod commands;
 mod config;
 
-use chrono::Utc;
+use commands::{BotCommand, DateCommand, ShellCommand};
 use config::Config;
 use ihex::Record;
 use std::{
     error::Error,
     io::{self, BufRead},
-    process::Command,
     thread,
     time::Duration,
 };
-
-trait BotCommand {
-    fn execute(&self) -> Result<String, Box<dyn Error>>;
-    fn usage(&self) -> String;
-}
-
-struct DateCommand;
-
-impl BotCommand for DateCommand {
-    fn execute(&self) -> Result<String, Box<dyn Error>> {
-        Ok(Utc::now().to_rfc2822())
-    }
-
-    fn usage(&self) -> String {
-        String::from("Show current time")
-    }
-}
-
-struct ShellCommand {
-    name: String,
-    args: Option<Vec<String>>,
-}
-
-impl ShellCommand {
-    fn new(name: &str, args: Option<Vec<String>>) -> Self {
-        Self {
-            name: name.to_owned(),
-            args,
-        }
-    }
-}
-
-impl BotCommand for ShellCommand {
-    fn execute(&self) -> Result<String, Box<dyn Error>> {
-        match Command::new(self.name.clone())
-            .args(self.args.clone().unwrap_or_default())
-            .output()
-        {
-            Ok(output) => Ok(String::from_utf8_lossy(&output.stdout).replace('\n', "\r\n")),
-            Err(_) => Ok(String::from("Could not run command")),
-        }
-    }
-
-    fn usage(&self) -> String {
-        String::from("Run a shell command")
-    }
-}
 
 fn parse_command(line: String) -> Result<Box<dyn BotCommand>, Box<dyn Error>> {
     let mut parts = line.split_whitespace();
